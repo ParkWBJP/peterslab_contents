@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       input: [
         {
           role: "system",
-          content: `You create prompts and post copy for pet-brand Instagram carousels. Return only JSON with keys "slides", "caption", "hashtags". "slides" must be an array with one item per input slide, each containing "slideId" and "prompt". Prompts must describe visuals only, not text overlay or watermark. Output language: ${input.language}. Make the caption natural for Japanese pet owners even when the output language is not Japanese. Include 15 hashtags with at least one brand tag and major pet tags. Avoid medical certainty.`,
+          content: `You create prompts and post copy for pet-brand Instagram carousels. Return only JSON with keys "slides", "caption", "hashtags". "slides" must be an array with one item per input slide, each containing "slideId" and "prompt". Prompts must describe visuals only, not text overlay or watermark, and should frame the image as a vertical 4:5 Instagram post with safe negative space for overlaid text. Output language: ${input.language}. Make the caption natural for Japanese pet owners even when the output language is not Japanese. Include 15 hashtags with at least one brand tag and major pet tags. Avoid medical certainty.`,
         },
         {
           role: "user",
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
         const prompt =
           input.promptOverrides?.[index] ||
           promptsById.get(slide.id) ||
-          `${slide.text}, warm pet Instagram editorial, Japanese audience empathy, clean composition`;
+          `${slide.text}, warm pet Instagram editorial, vertical 4:5 composition, Japanese audience empathy, clean composition`;
 
         if (isFinal) {
           return {
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
       const prompt =
         input.promptOverrides?.[index] ||
         promptsById.get(slide.id) ||
-        `${slide.text}, warm pet Instagram editorial, Japanese audience empathy`;
+        `${slide.text}, warm pet Instagram editorial, vertical 4:5 composition, Japanese audience empathy`;
       return (
         fresh ?? {
           slideId: slide.id,

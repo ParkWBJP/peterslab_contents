@@ -172,19 +172,19 @@ function scenarioTemplates(language: Language, topic: string): string[][] {
 
 function svgDataUrl(title: string, body: string, accent: string) {
   const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+  <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350">
     <defs>
       <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0%" stop-color="${accent}" />
         <stop offset="100%" stop-color="#f7f1ea" />
       </linearGradient>
     </defs>
-    <rect width="1024" height="768" rx="32" fill="url(#g)" />
+    <rect width="1080" height="1350" rx="36" fill="url(#g)" />
     <circle cx="160" cy="160" r="120" fill="rgba(255,255,255,0.22)" />
-    <circle cx="860" cy="560" r="120" fill="rgba(110,72,45,0.10)" />
+    <circle cx="900" cy="980" r="160" fill="rgba(110,72,45,0.10)" />
     <text x="88" y="110" fill="#513628" font-size="42" font-family="Arial">Yukiharu Demo</text>
-    <text x="88" y="430" fill="#281c17" font-size="60" font-weight="700" font-family="Arial">${escapeXml(title)}</text>
-    <foreignObject x="88" y="476" width="780" height="160">
+    <text x="88" y="720" fill="#281c17" font-size="60" font-weight="700" font-family="Arial">${escapeXml(title)}</text>
+    <foreignObject x="88" y="800" width="860" height="240">
       <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: Arial; font-size: 27px; color: #4d3931; line-height: 1.45;">
         ${escapeXml(body)}
       </div>
@@ -242,10 +242,10 @@ export function generateMockAssets(input: AssetsRequest): AssetsResponse {
     const prompt =
       input.promptOverrides?.[index] ||
       (input.language === "en"
-        ? `Warm pet Instagram editorial slide about "${slide.text}", 4:3 frame, clean negative space for text, Japanese audience empathy, no watermark embedded`
+        ? `Warm pet Instagram editorial slide about "${slide.text}", vertical 4:5 frame, clean negative space for text, Japanese audience empathy, no watermark embedded`
         : input.language === "ko"
-          ? `"${slide.text}"를 중심으로 한 따뜻한 펫 인스타그램 카드뉴스, 4:3 비율, 텍스트 여백 확보, 일본 보호자 공감 톤, 워터마크 미삽입`
-          : `「${slide.text}」を中心にした温かいペット向けInstagramカード、4:3構図、文字余白あり、日本の飼い主向けの共感トーン、透かしは入れない`);
+          ? `"${slide.text}"를 중심으로 한 따뜻한 펫 인스타그램 카드뉴스, 4:5 세로 비율, 텍스트 여백 확보, 일본 보호자 공감 톤, 워터마크 미삽입`
+          : `「${slide.text}」を中心にした温かいペット向けInstagramカード、4:5縦構図、文字余白あり、日本の飼い主向けの共感トーン、透かしは入れない`);
 
     return {
       slideId: slide.id,

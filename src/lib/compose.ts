@@ -15,45 +15,118 @@ function loadImage(source: string) {
   });
 }
 
-function wrapText(
+function getTokens(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
+    const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+    const segments = Array.from(segmenter.segment(trimmed))
+      .map((part) => part.segment)
+      .filter((part) => part.trim().length > 0);
+
+    if (segments.length > 1) {
+      return segments;
+    }
+  }
+
+  if (trimmed.includes(" ")) {
+    return trimmed.split(/\s+/).filter(Boolean);
+  }
+
+  return Array.from(trimmed);
+}
+
+function joinTokens(tokens: string[]) {
+  return tokens.some((token) => /\s/.test(token) || /^[A-Za-z0-9]/.test(token))
+    ? tokens.join(" ")
+    : tokens.join("");
+}
+
+function buildLines(
+  context: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxLines: number,
+) {
+  const tokens = getTokens(text);
+  if (!tokens.length) {
+    return [text];
+  }
+
+  const lines: string[] = [];
+  let currentTokens: string[] = [];
+
+  for (const token of tokens) {
+    const candidateTokens = [...currentTokens, token];
+    const candidate = joinTokens(candidateTokens);
+
+    if (
+      currentTokens.length > 0 &&
+      context.measureText(candidate).width > maxWidth &&
+      lines.length < maxLines - 1
+    ) {
+      lines.push(joinTokens(currentTokens));
+      currentTokens = [token];
+      continue;
+    }
+
+    if (
+      currentTokens.length > 0 &&
+      context.measureText(candidate).width > maxWidth &&
+      lines.length === maxLines - 1
+    ) {
+      const finalTokens = [...currentTokens];
+      while (finalTokens.length > 1) {
+        const withEllipsis = `${joinTokens([...finalTokens, "…"])}`;
+        if (context.measureText(withEllipsis).width <= maxWidth) {
+          lines.push(withEllipsis);
+          return lines;
+        }
+        finalTokens.pop();
+      }
+      lines.push(`${joinTokens(finalTokens)}…`);
+      return lines;
+    }
+
+    currentTokens = candidateTokens;
+  }
+
+  if (currentTokens.length) {
+    lines.push(joinTokens(currentTokens));
+  }
+
+  return lines;
+}
+
+function fitTextLayout(
   context: CanvasRenderingContext2D,
   text: string,
   maxWidth: number,
 ) {
-  const words = text.split(" ");
-  if (words.length === 1) {
-    const segments: string[] = [];
-    let current = "";
-    for (const character of text) {
-      const next = current + character;
-      if (context.measureText(next).width > maxWidth && current) {
-        segments.push(current);
-        current = character;
-      } else {
-        current = next;
-      }
+  const fontSizes = [70, 64, 58, 52, 48, 44];
+
+  for (const fontSize of fontSizes) {
+    context.font = `700 ${fontSize}px Arial`;
+    const lines = buildLines(context, text, maxWidth, 2);
+    if (lines.length <= 2 && lines.every((line) => context.measureText(line).width <= maxWidth)) {
+      return {
+        fontSize,
+        lineHeight: Math.round(fontSize * 1.16),
+        lines,
+      };
     }
-    if (current) {
-      segments.push(current);
-    }
-    return segments;
   }
 
-  const lines: string[] = [];
-  let current = words[0] ?? "";
-  for (const word of words.slice(1)) {
-    const candidate = `${current} ${word}`;
-    if (context.measureText(candidate).width > maxWidth) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = candidate;
-    }
-  }
-  if (current) {
-    lines.push(current);
-  }
-  return lines;
+  const fallbackSize = 42;
+  context.font = `700 ${fallbackSize}px Arial`;
+  return {
+    fontSize: fallbackSize,
+    lineHeight: Math.round(fallbackSize * 1.18),
+    lines: buildLines(context, text, maxWidth, 2),
+  };
 }
 
 export async function composeSlideFrame({
@@ -63,8 +136,8 @@ export async function composeSlideFrame({
   isFinal,
 }: ComposeOptions) {
   const canvas = document.createElement("canvas");
-  canvas.width = 1200;
-  canvas.height = 900;
+  canvas.width = 1080;
+  canvas.height = 1350;
   const context = canvas.getContext("2d");
   if (!context) {
     throw new Error("Canvas unavailable");
@@ -85,45 +158,64 @@ export async function composeSlideFrame({
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.drawImage(background, x, y, width, height);
 
-  context.fillStyle = "rgba(20, 12, 9, 0.24)";
-  context.fillRect(0, canvas.height - 248, canvas.width, 248);
+  const overlayHeight = 356;
+  const gradient = context.createLinearGradient(0, canvas.height - overlayHeight, 0, canvas.height);
+  gradient.addColorStop(0, "rgba(22, 13, 10, 0)");
+  gradient.addColorStop(0.34, "rgba(22, 13, 10, 0.28)");
+  gradient.addColorStop(1, "rgba(22, 13, 10, 0.62)");
+  context.fillStyle = gradient;
+  context.fillRect(0, canvas.height - overlayHeight, canvas.width, overlayHeight);
+
+  const textWidth = 828;
+  const textX = 74;
+  const layout = fitTextLayout(context, text, textWidth);
+  const textBlockHeight = layout.lineHeight * layout.lines.length;
+  const textBackgroundY = canvas.height - 238 - textBlockHeight / 2;
+
+  context.fillStyle = "rgba(255, 247, 238, 0.12)";
+  context.beginPath();
+  context.roundRect(52, textBackgroundY - 28, 890, textBlockHeight + 52, 28);
+  context.fill();
 
   context.fillStyle = "#fffaf2";
-  context.font = "700 58px Arial";
+  context.font = `700 ${layout.fontSize}px Arial`;
   context.textBaseline = "top";
-  const lines = wrapText(context, text, 920);
-  lines.slice(0, 3).forEach((line, index) => {
-    context.fillText(line, 76, canvas.height - 205 + index * 68);
+  layout.lines.forEach((line, index) => {
+    context.fillText(line, textX, textBackgroundY + index * layout.lineHeight);
   });
 
-  const watermarkWidth = isFinal ? 178 : 198;
+  const watermarkWidth = 204;
   const watermarkHeight = (watermark.height / watermark.width) * watermarkWidth;
   const badgeX = 28;
-  const badgeY = 22;
-  const badgeWidth = watermarkWidth + 52;
-  const badgeHeight = watermarkHeight + 36;
+  const badgeY = 24;
+  const badgeWidth = watermarkWidth + 44;
+  const badgeHeight = watermarkHeight + 28;
 
   context.save();
-  context.shadowColor = "rgba(64, 39, 28, 0.16)";
-  context.shadowBlur = 18;
-  context.fillStyle = "rgba(255, 251, 245, 0.94)";
+  context.shadowColor = "rgba(31, 18, 12, 0.22)";
+  context.shadowBlur = 20;
+  context.fillStyle = "rgba(255, 252, 248, 0.96)";
   context.beginPath();
-  context.roundRect(badgeX, badgeY, badgeWidth, badgeHeight, 26);
+  context.roundRect(badgeX, badgeY, badgeWidth, badgeHeight, 24);
   context.fill();
   context.restore();
 
-  context.fillStyle = "rgba(255, 225, 203, 0.65)";
+  context.strokeStyle = "rgba(226, 198, 181, 0.72)";
+  context.lineWidth = 1.5;
   context.beginPath();
-  context.roundRect(badgeX + 8, badgeY + 8, badgeWidth - 16, badgeHeight - 16, 20);
-  context.fill();
+  context.roundRect(badgeX, badgeY, badgeWidth, badgeHeight, 24);
+  context.stroke();
 
-  context.drawImage(
-    watermark,
-    badgeX + 26,
-    badgeY + 18,
-    watermarkWidth,
-    watermarkHeight,
-  );
+  context.drawImage(watermark, badgeX + 22, badgeY + 14, watermarkWidth, watermarkHeight);
+
+  if (isFinal) {
+    context.fillStyle = "rgba(255, 250, 243, 0.16)";
+    context.beginPath();
+    context.roundRect(46, 46, canvas.width - 92, canvas.height - 92, 34);
+    context.strokeStyle = "rgba(255, 245, 235, 0.45)";
+    context.lineWidth = 2;
+    context.stroke();
+  }
 
   return canvas.toDataURL("image/png");
 }

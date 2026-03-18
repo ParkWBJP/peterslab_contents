@@ -905,7 +905,7 @@ export function WizardApp() {
                   <StepHeading stepLabel={`${copy.step} 9`} title={copy.videoReady} description={copy.finalCongrats} />
                   {project.video ? (
                     <div className="space-y-4">
-                      <video src={project.video.dataUrl} controls className="aspect-[4/3] w-full rounded-[1.5rem] bg-[#2f2018]" />
+                      <video src={project.video.dataUrl} controls className="aspect-[4/5] w-full rounded-[1.5rem] bg-[#2f2018]" />
                       <a
                         href={project.video.dataUrl}
                         download={project.video.fileName || `${slugifyFileName(project.topicDraft || "yukiharu")}.mp4`}
