@@ -904,15 +904,21 @@ export function WizardApp() {
                 <div className="space-y-5">
                   <StepHeading stepLabel={`${copy.step} 9`} title={copy.videoReady} description={copy.finalCongrats} />
                   {project.video ? (
-                    <div className="space-y-4">
-                      <video src={project.video.dataUrl} controls className="aspect-[4/5] w-full rounded-[1.5rem] bg-[#2f2018]" />
-                      <a
-                        href={project.video.dataUrl}
-                        download={project.video.fileName || `${slugifyFileName(project.topicDraft || "yukiharu")}.mp4`}
-                        className="inline-flex rounded-full bg-[#ff8d5f] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(255,141,95,0.24)] transition hover:-translate-y-0.5 active:translate-y-0.5"
-                      >
-                        {copy.downloadVideo}
-                      </a>
+                    <div className="mx-auto max-w-[420px] space-y-4">
+                      <video
+                        src={project.video.dataUrl}
+                        controls
+                        className="aspect-[4/5] w-full rounded-[1.5rem] bg-[#2f2018] shadow-[0_18px_40px_rgba(47,32,24,0.18)]"
+                      />
+                      <div className="flex justify-center">
+                        <a
+                          href={project.video.dataUrl}
+                          download={project.video.fileName || `${slugifyFileName(project.topicDraft || "yukiharu")}.mp4`}
+                          className="inline-flex rounded-full bg-[#ff8d5f] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(255,141,95,0.24)] transition hover:-translate-y-0.5 active:translate-y-0.5"
+                        >
+                          {copy.downloadVideo}
+                        </a>
+                      </div>
                     </div>
                   ) : null}
                 </div>

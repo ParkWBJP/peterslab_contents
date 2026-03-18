@@ -158,6 +158,10 @@ export async function composeSlideFrame({
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.drawImage(background, x, y, width, height);
 
+  if (isFinal) {
+    return canvas.toDataURL("image/png");
+  }
+
   const overlayHeight = 356;
   const gradient = context.createLinearGradient(0, canvas.height - overlayHeight, 0, canvas.height);
   gradient.addColorStop(0, "rgba(22, 13, 10, 0)");
@@ -207,15 +211,6 @@ export async function composeSlideFrame({
   context.stroke();
 
   context.drawImage(watermark, badgeX + 22, badgeY + 14, watermarkWidth, watermarkHeight);
-
-  if (isFinal) {
-    context.fillStyle = "rgba(255, 250, 243, 0.16)";
-    context.beginPath();
-    context.roundRect(46, 46, canvas.width - 92, canvas.height - 92, 34);
-    context.strokeStyle = "rgba(255, 245, 235, 0.45)";
-    context.lineWidth = 2;
-    context.stroke();
-  }
 
   return canvas.toDataURL("image/png");
 }
