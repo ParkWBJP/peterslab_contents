@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="80" viewBox="0 0 240 80" fill="none">
+  <rect width="240" height="80" rx="20" fill="#FFF7ED"/>
+  <circle cx="40" cy="40" r="20" fill="#D89A6A"/>
+  <path d="M31 42C31 35.373 36.373 30 43 30H46C52.627 30 58 35.373 58 42V45C58 51.627 52.627 57 46 57H43C36.373 57 31 51.627 31 45V42Z" fill="#2D211B"/>
+  <text x="74" y="35" fill="#5B3E2E" font-family="Arial, sans-serif" font-size="13" font-weight="700">YUKIHARU</text>
+  <text x="74" y="54" fill="#956C54" font-family="Arial, sans-serif" font-size="11">PET BRAND KIT</text>
+</svg>

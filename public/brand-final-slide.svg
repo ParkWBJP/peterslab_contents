@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" fill="none">
+  <rect width="1200" height="900" fill="#EFD9C8"/>
+  <circle cx="250" cy="220" r="150" fill="#F8EBDD"/>
+  <circle cx="940" cy="690" r="180" fill="#D7B39A" fill-opacity=".4"/>
+  <rect x="128" y="128" width="944" height="644" rx="36" fill="#FFF8F1"/>
+  <text x="160" y="250" fill="#7A553E" font-family="Arial, sans-serif" font-size="18" letter-spacing="6">YUKIHARU BRAND ENDING</text>
+  <text x="160" y="390" fill="#2E211B" font-family="Arial, sans-serif" font-size="72" font-weight="700">Gentle care,</text>
+  <text x="160" y="474" fill="#2E211B" font-family="Arial, sans-serif" font-size="72" font-weight="700">quietly remembered.</text>
+  <text x="160" y="566" fill="#8F6C58" font-family="Arial, sans-serif" font-size="28">Replace this with the registered brand closing image for your final slide.</text>
+</svg>
