@@ -42,7 +42,6 @@ async function makeImage(client: NonNullable<ReturnType<typeof getOpenAIClient>>
     model: getOpenAIImageModel(),
     prompt,
     size: "1024x1024",
-    // Cost-saving policy for the current MVP: always force low image quality.
     quality: getOpenAIImageQuality(),
   });
 

@@ -39,14 +39,13 @@ export function hasOpenAIKey() {
 }
 
 export function getOpenAITextModel() {
-  return process.env.OPENAI_TEXT_MODEL?.trim() || "gpt-4.1-mini";
+  return process.env.OPENAI_TEXT_MODEL?.trim() || "gpt-5.4";
 }
 
 export function getOpenAIImageModel() {
-  return process.env.OPENAI_IMAGE_MODEL?.trim() || "gpt-image-1-mini";
+  return process.env.OPENAI_IMAGE_MODEL?.trim() || "gpt-image-1.5";
 }
 
 export function getOpenAIImageQuality() {
-  // Cost-saving policy for the current MVP: always force low image quality.
-  return "low" as const;
+  return (process.env.OPENAI_IMAGE_QUALITY?.trim() || "high") as "low" | "medium" | "high";
 }
