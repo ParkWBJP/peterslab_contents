@@ -6,6 +6,7 @@ import { generateMockAssets } from "@/lib/mock";
 import {
   getOpenAIClient,
   getOpenAIImageModel,
+  getOpenAIImageQuality,
   getOpenAITextModel,
 } from "@/lib/openai";
 import type { AssetsResponse } from "@/lib/types";
@@ -33,6 +34,8 @@ async function makeImage(client: NonNullable<ReturnType<typeof getOpenAIClient>>
     model: getOpenAIImageModel(),
     prompt,
     size: "1024x1024",
+    // Cost-saving policy for the current MVP: always force low image quality.
+    quality: getOpenAIImageQuality(),
   });
 
   const base64 = imageResponse.data?.[0]?.b64_json;

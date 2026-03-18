@@ -35,3 +35,8 @@ export function getOpenAITextModel() {
 export function getOpenAIImageModel() {
   return process.env.OPENAI_IMAGE_MODEL?.trim() || "gpt-image-1-mini";
 }
+
+export function getOpenAIImageQuality() {
+  // Cost-saving policy for the current MVP: always force low image quality.
+  return "low" as const;
+}

@@ -23,7 +23,10 @@ npm run dev
 OPENAI_API_KEY=
 OPENAI_TEXT_MODEL=gpt-4.1-mini
 OPENAI_IMAGE_MODEL=gpt-image-1-mini
+OPENAI_IMAGE_QUALITY=low
 ```
+
+Image generation quality is fixed to `low` in the server for MVP cost control.
 
 ## 현재 상태
 
