@@ -9,6 +9,7 @@ import {
   getOpenAIImageQuality,
   getOpenAITextModel,
 } from "@/lib/openai";
+import { BRAND_HASHTAGS, buildAssetsPrompt } from "@/lib/prompts";
 import type { AssetsResponse } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -16,7 +17,14 @@ export const runtime = "nodejs";
 const schema = z.object({
   language: z.enum(["ja", "ko", "en"]),
   petKind: z.enum(["dog", "cat", "common"]),
-  contentType: z.enum(["fun", "info", "empathy", "health"]),
+  contentType: z.enum([
+    "fun",
+    "info",
+    "empathy",
+    "health",
+    "productPromo",
+    "anniversary",
+  ]),
   topic: z.string().min(1),
   scenarioTitle: z.string().min(1),
   slides: z.array(
@@ -54,22 +62,17 @@ export async function POST(request: Request) {
   }
 
   try {
+    const prompt = buildAssetsPrompt(input);
     const promptPlan = await client.responses.create({
       model: getOpenAITextModel(),
       input: [
         {
           role: "system",
-          content: `You create prompts and post copy for pet-brand Instagram carousels. Return only JSON with keys "slides", "caption", "hashtags". "slides" must be an array with one item per input slide, each containing "slideId" and "prompt". Prompts must describe visuals only, not text overlay or watermark, and should frame the image as a vertical 4:5 Instagram post with safe negative space for overlaid text. Output language: ${input.language}. Make the caption natural for Japanese pet owners even when the output language is not Japanese. Include 15 hashtags with at least one brand tag and major pet tags. Avoid medical certainty.`,
+          content: prompt.system,
         },
         {
           role: "user",
-          content: JSON.stringify({
-            topic: input.topic,
-            scenarioTitle: input.scenarioTitle,
-            target: input.petKind,
-            goal: input.contentType,
-            slides: input.slides,
-          }),
+          content: prompt.user,
         },
       ],
     });
@@ -142,7 +145,7 @@ export async function POST(request: Request) {
     const payload: AssetsResponse = {
       slides: merged,
       caption: parsed.caption,
-      hashtags: parsed.hashtags.slice(0, 15),
+      hashtags: [...new Set([...BRAND_HASHTAGS, ...parsed.hashtags])].slice(0, 15),
       usedFallback: false,
     };
 

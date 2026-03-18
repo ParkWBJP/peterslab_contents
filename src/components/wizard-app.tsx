@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { ProgressPanel } from "@/components/progress-panel";
+import { renderVideoInBrowser } from "@/lib/browser-video";
 import { composeSlideFrame } from "@/lib/compose";
 import { DEFAULT_PROJECT_STATE, SLIDE_DURATION_OPTIONS, STORAGE_KEY } from "@/lib/constants";
 import { getDictionary, languageOptions } from "@/lib/i18n";
@@ -42,7 +43,14 @@ import {
 type BusyState = { label: string };
 
 const PET_OPTIONS: PetKind[] = ["dog", "cat", "common"];
-const CONTENT_OPTIONS: ContentType[] = ["fun", "info", "empathy", "health"];
+const CONTENT_OPTIONS: ContentType[] = [
+  "fun",
+  "info",
+  "empathy",
+  "health",
+  "productPromo",
+  "anniversary",
+];
 
 async function postJson<TResponse, TRequest>(url: string, body: TRequest) {
   const response = await fetch(url, {
@@ -50,8 +58,43 @@ async function postJson<TResponse, TRequest>(url: string, body: TRequest) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `Request failed: ${response.status}`);
+  }
   return (await response.json()) as TResponse;
+}
+
+function getActionErrorMessage(language: Language | null, type: "api" | "video") {
+  if (language === "ja") {
+    return type === "video"
+      ? "動画の生成に失敗しました。もう一度お試しください。"
+      : "AIの応答を読み込めませんでした。少しあとでもう一度お試しください。";
+  }
+
+  if (language === "en") {
+    return type === "video"
+      ? "Video rendering failed. Please try again."
+      : "The AI response could not be loaded. Please try again in a moment.";
+  }
+
+  return type === "video"
+    ? "영상 생성에 실패했습니다. 다시 시도해 주세요."
+    : "AI 응답을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+}
+
+function getVideoDownloadLabel(language: Language | null, mimeType: string) {
+  const extension = mimeType.includes("mp4") ? "MP4" : "WEBM";
+
+  if (language === "ja") {
+    return `${extension}をダウンロード`;
+  }
+
+  if (language === "en") {
+    return `Download ${extension}`;
+  }
+
+  return `${extension} 다운로드`;
 }
 
 function StepHeading({
@@ -223,15 +266,15 @@ function ReviewImageCard({
   const copy = getDictionary(language);
 
   return (
-    <article className="rounded-[1.5rem] border border-[#ead8cd] bg-white p-4">
-      <div className="mt-2 rounded-[1rem] bg-[#fff8f1] p-2.5">
+    <article className="flex h-full flex-col rounded-[1.5rem] border border-[#ead8cd] bg-white p-4">
+      <div className="mt-2 flex-1 rounded-[1rem] bg-[#fff8f1] p-2.5">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[#b48061]">{copy.prompt}</p>
         <textarea
           value={asset.prompt}
           onChange={(event) => onPromptChange(event.target.value)}
-          rows={3}
+          rows={11}
           disabled={asset.isFinal}
-          className="w-full resize-none rounded-[0.95rem] border border-[#ecd8cb] bg-white px-3 py-2 text-sm leading-5 outline-none focus:border-[#ff9a67] disabled:bg-[#faf2eb] disabled:text-[#9c8578]"
+          className="min-h-[320px] w-full resize-none rounded-[0.95rem] border border-[#ecd8cb] bg-white px-3 py-2 text-sm leading-5 outline-none focus:border-[#ff9a67] disabled:bg-[#faf2eb] disabled:text-[#9c8578]"
         />
       </div>
       <div className="mt-2 flex gap-2">
@@ -271,8 +314,8 @@ function ReviewEditor({
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        rows={7}
-        className="mt-3 w-full rounded-[1rem] border border-[#ecd8cb] bg-[#fffdfa] px-4 py-3 text-sm leading-6 outline-none focus:border-[#ff9a67]"
+        rows={9}
+        className="mt-3 min-h-[220px] w-full rounded-[1rem] border border-[#ecd8cb] bg-[#fffdfa] px-4 py-3 text-sm leading-6 outline-none focus:border-[#ff9a67]"
       />
       <div className="mt-3 flex gap-2">
         <ActionButton label={copy.copyAction} variant="secondary" onClick={onCopy} />
@@ -288,6 +331,7 @@ export function WizardApp() {
   const [busy, setBusy] = useState<BusyState | null>(null);
   const [apiMode, setApiMode] = useState("");
   const [reviewIndex, setReviewIndex] = useState(0);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     setProject(safeParseProjectState(window.localStorage.getItem(STORAGE_KEY)));
@@ -336,11 +380,13 @@ export function WizardApp() {
   const handleGenerateTopics = async () => {
     if (!project.language || !project.petKind || !project.contentType) return;
     setBusy({ label: copy.loadingTopics });
+    setErrorMessage("");
     try {
       const response = await postJson<TopicsResponse, TopicsRequest>("/api/generate/topics", {
         language: project.language,
         petKind: project.petKind,
         contentType: project.contentType,
+        avoidTitles: project.topicHistory.flat().map((topic) => topic.title),
       });
       setApiMode(getApiModeLabel(response.usedFallback, project.language));
       setReviewIndex(0);
@@ -350,7 +396,7 @@ export function WizardApp() {
         topicHistory: [...current.topicHistory, response.topics],
         selectedTopicId: response.topics[0]?.id ?? null,
         topicDraft: response.topics[0]?.title ?? "",
-        topicDescriptionDraft: response.topics[0]?.description ?? "",
+        topicDescriptionDraft: response.topics[0]?.detailedDescription ?? "",
         scenarios: [],
         selectedScenarioId: null,
         generatedAssets: [],
@@ -359,6 +405,9 @@ export function WizardApp() {
         video: null,
         activeStep: 2,
       }));
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(getActionErrorMessage(project.language, "api"));
     } finally {
       setBusy(null);
     }
@@ -367,6 +416,7 @@ export function WizardApp() {
   const handleGenerateScenarios = async () => {
     if (!project.language || !project.petKind || !project.contentType || !project.topicDraft) return;
     setBusy({ label: copy.loadingScenarios });
+    setErrorMessage("");
     try {
       const response = await postJson<ScenariosResponse, ScenariosRequest>("/api/generate/scenarios", {
         language: project.language,
@@ -374,6 +424,7 @@ export function WizardApp() {
         contentType: project.contentType,
         topic: project.topicDraft,
         topicDescription: project.topicDescriptionDraft,
+        avoidScenarioTitles: project.scenarioHistory.flat().map((scenario) => scenario.title),
       });
       setApiMode(getApiModeLabel(response.usedFallback, project.language));
       updateProject((current) => ({
@@ -385,6 +436,9 @@ export function WizardApp() {
         video: null,
         activeStep: 4,
       }));
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(getActionErrorMessage(project.language, "api"));
     } finally {
       setBusy(null);
     }
@@ -393,6 +447,7 @@ export function WizardApp() {
   const handleGenerateAssets = async () => {
     if (!project.language || !project.petKind || !project.contentType || !selectedScenario) return;
     setBusy({ label: copy.loadingAssets });
+    setErrorMessage("");
     try {
       const response = await postJson<AssetsResponse, AssetsRequest>("/api/generate/assets", {
         language: project.language,
@@ -419,6 +474,9 @@ export function WizardApp() {
         video: null,
         activeStep: 7,
       }));
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(getActionErrorMessage(project.language, "api"));
     } finally {
       setBusy(null);
     }
@@ -427,6 +485,7 @@ export function WizardApp() {
   const handleRegenerateSingle = async (index: number) => {
     if (!project.language || !project.petKind || !project.contentType || !selectedScenario || !project.generatedAssets[index] || project.generatedAssets[index]?.isFinal) return;
     setBusy({ label: copy.loadingAssets });
+    setErrorMessage("");
     try {
       const response = await postJson<AssetsResponse, AssetsRequest>("/api/generate/assets", {
         language: project.language,
@@ -460,6 +519,9 @@ export function WizardApp() {
         caption: response.caption,
         hashtags: response.hashtags,
       }));
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(getActionErrorMessage(project.language, "api"));
     } finally {
       setBusy(null);
     }
@@ -468,12 +530,31 @@ export function WizardApp() {
   const handleRenderVideo = async () => {
     if (!project.generatedAssets.length) return;
     setBusy({ label: copy.renderingVideo });
+    setErrorMessage("");
     try {
-      const response = await postJson<{ dataUrl: string; mimeType: string; fileName: string }, RenderVideoRequest>("/api/render-video", {
+      const requestBody: RenderVideoRequest = {
         frames: project.generatedAssets.map((asset) => asset.composedUrl),
         slideDuration: project.slideDuration,
-      });
+      };
+      let response;
+
+      try {
+        response = await postJson<{ dataUrl: string; mimeType: string; fileName: string }, RenderVideoRequest>(
+          "/api/render-video",
+          requestBody,
+        );
+      } catch (serverError) {
+        console.error(serverError);
+        response = await renderVideoInBrowser(
+          requestBody,
+          project.topicDraft || selectedScenario?.title || "yukiharu-slideshow",
+        );
+      }
+
       updateProject((current) => ({ ...current, video: response, activeStep: 9 }));
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(getActionErrorMessage(project.language, "video"));
     } finally {
       setBusy(null);
     }
@@ -512,6 +593,7 @@ export function WizardApp() {
                     setProject(DEFAULT_PROJECT_STATE);
                     setReviewIndex(0);
                     setApiMode("");
+                    setErrorMessage("");
                   }}
                 />
               </div>
@@ -519,6 +601,12 @@ export function WizardApp() {
           </div>
 
           <div className="mt-4">
+            {errorMessage ? (
+              <div className="mb-4 rounded-[1.2rem] border border-[#f0c8bd] bg-[#fff4ef] px-4 py-3 text-sm text-[#8a4b39] shadow-[0_10px_24px_rgba(138,75,57,0.08)]">
+                {errorMessage}
+              </div>
+            ) : null}
+
             {project.activeStep === 0 ? (
               <div className="mx-auto max-w-[760px]">
                 <StepShell className="bg-[linear-gradient(180deg,#fffaf4,#fff4ed)]">
@@ -632,7 +720,7 @@ export function WizardApp() {
                               ...current,
                               selectedTopicId: topic.id,
                               topicDraft: topic.title,
-                              topicDescriptionDraft: topic.description,
+                              topicDescriptionDraft: topic.detailedDescription,
                             }))
                           }
                           className={`rounded-[1.3rem] border p-4 text-left transition hover:-translate-y-0.5 ${
@@ -641,8 +729,22 @@ export function WizardApp() {
                               : "border-[#ead8cd] bg-white hover:border-[#efb18f]"
                           }`}
                         >
-                          <p className="text-base font-semibold text-[#51382d]">{topic.title}</p>
-                          <p className="mt-2 text-sm leading-6 text-[#7a6258]">{topic.description}</p>
+                          <span className="inline-flex rounded-full bg-[#fff7ef] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#c07d59]">
+                            {topic.categoryTag}
+                          </span>
+                          <p className="mt-3 text-base font-semibold text-[#51382d]">{topic.title}</p>
+                          <p className="mt-2 text-sm font-semibold text-[#c07d59]">{topic.shortTagline}</p>
+                          <p className="mt-2 text-sm leading-6 text-[#7a6258]">{topic.detailedDescription}</p>
+                          <div className="mt-3 space-y-2 text-[13px] leading-5 text-[#6d5448]">
+                            <p>
+                              <span className="font-semibold text-[#51382d]">{copy.whyInterestingLabel}: </span>
+                              {topic.whyInteresting}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-[#51382d]">{copy.seasonalTrendLabel}: </span>
+                              {topic.seasonalOrTrendPoint}
+                            </p>
+                          </div>
                         </button>
                       );
                     })}
@@ -775,7 +877,7 @@ export function WizardApp() {
                   <StepHeading stepLabel={`${copy.step} 7`} title={copy.reviewAssets} description={copy.promptHint} />
                   <div className="space-y-4">
                     <div className="rounded-[1.7rem] border border-[#efd7ca] bg-[linear-gradient(180deg,#fffaf6,#fff5ee)] p-4">
-                      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+                      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-stretch">
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-3">
                             <div className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-[#6b5143]">
@@ -926,7 +1028,7 @@ export function WizardApp() {
                           download={project.video.fileName || `${slugifyFileName(project.topicDraft || "yukiharu")}.mp4`}
                           className="inline-flex rounded-full bg-[#ff8d5f] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(255,141,95,0.24)] transition hover:-translate-y-0.5 active:translate-y-0.5"
                         >
-                          {copy.downloadVideo}
+                          {getVideoDownloadLabel(project.language, project.video.mimeType)}
                         </a>
                       </div>
                     </div>

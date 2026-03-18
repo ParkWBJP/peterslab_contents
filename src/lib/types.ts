@@ -2,7 +2,13 @@ export type Language = "ja" | "ko" | "en";
 
 export type PetKind = "dog" | "cat" | "common";
 
-export type ContentType = "fun" | "info" | "empathy" | "health";
+export type ContentType =
+  | "fun"
+  | "info"
+  | "empathy"
+  | "health"
+  | "productPromo"
+  | "anniversary";
 
 export type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -16,7 +22,11 @@ export interface BrandAssets {
 export interface TopicSuggestion {
   id: string;
   title: string;
-  description: string;
+  shortTagline: string;
+  detailedDescription: string;
+  whyInteresting: string;
+  seasonalOrTrendPoint: string;
+  categoryTag: string;
 }
 
 export interface ScenarioSlide {
@@ -72,6 +82,7 @@ export interface TopicsRequest {
   language: Language;
   petKind: PetKind;
   contentType: ContentType;
+  avoidTitles?: string[];
 }
 
 export interface TopicsResponse {
@@ -85,6 +96,7 @@ export interface ScenariosRequest {
   contentType: ContentType;
   topic: string;
   topicDescription?: string;
+  avoidScenarioTitles?: string[];
 }
 
 export interface ScenariosResponse {

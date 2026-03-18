@@ -2,12 +2,22 @@ import OpenAI from "openai";
 
 let client: OpenAI | null = null;
 
+const API_KEY_ENV_NAMES = [
+  "OPENAI_API_KEY",
+  "OPENAI_APIKEY",
+  "OPENAI_KEY",
+  "NEXT_PUBLIC_OPENAI_API_KEY",
+] as const;
+
 function readApiKey() {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey || apiKey === "your_openai_api_key_here") {
-    return null;
+  for (const envName of API_KEY_ENV_NAMES) {
+    const apiKey = process.env[envName]?.trim();
+    if (apiKey && apiKey !== "your_openai_api_key_here") {
+      return apiKey;
+    }
   }
-  return apiKey;
+
+  return null;
 }
 
 export function getOpenAIClient() {

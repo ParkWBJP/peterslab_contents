@@ -4,6 +4,7 @@ import { z } from "zod";
 import { extractJson } from "@/lib/json";
 import { generateMockScenarios } from "@/lib/mock";
 import { getOpenAIClient, getOpenAITextModel } from "@/lib/openai";
+import { buildScenariosPrompt } from "@/lib/prompts";
 import { createId } from "@/lib/utils";
 import type { ScenarioOption, ScenariosResponse } from "@/lib/types";
 
@@ -12,9 +13,17 @@ export const runtime = "nodejs";
 const schema = z.object({
   language: z.enum(["ja", "ko", "en"]),
   petKind: z.enum(["dog", "cat", "common"]),
-  contentType: z.enum(["fun", "info", "empathy", "health"]),
+  contentType: z.enum([
+    "fun",
+    "info",
+    "empathy",
+    "health",
+    "productPromo",
+    "anniversary",
+  ]),
   topic: z.string().min(1),
   topicDescription: z.string().optional(),
+  avoidScenarioTitles: z.array(z.string()).optional(),
 });
 
 export async function POST(request: Request) {
@@ -26,16 +35,17 @@ export async function POST(request: Request) {
   }
 
   try {
+    const prompt = buildScenariosPrompt(input);
     const response = await client.responses.create({
       model: getOpenAITextModel(),
       input: [
         {
           role: "system",
-          content: `You create Instagram carousel scenarios for Japanese pet owners. Return only JSON with "scenarios": exactly 3 items. Each item must have "title", "hook", and "slides". "hook" must be one of question, impact, scrollStop. Each scenario needs 5 to 7 slides. The first slide must be a question, impact, or scroll-stopping opener. Keep each slide short enough to overlay on an image, around 20 Japanese characters if Japanese. Use a clean beginning-development-twist-ending flow. Final slide should work as a brand-fixed image slot. Output language: ${input.language}.`,
+          content: prompt.system,
         },
         {
           role: "user",
-          content: `Topic: ${input.topic}\nDescription: ${input.topicDescription ?? ""}\nTarget: ${input.petKind}\nGoal: ${input.contentType}`,
+          content: prompt.user,
         },
       ],
     });
@@ -43,7 +53,8 @@ export async function POST(request: Request) {
     const parsed = extractJson<{
       scenarios: Array<{
         title: string;
-        hook: ScenarioOption["hook"];
+        hookType?: ScenarioOption["hook"];
+        hook?: ScenarioOption["hook"];
         slides: string[];
       }>;
     }>(response.output_text);
@@ -51,7 +62,7 @@ export async function POST(request: Request) {
     const scenarios: ScenarioOption[] = parsed.scenarios.slice(0, 3).map((item) => ({
       id: createId("scenario"),
       title: item.title.trim(),
-      hook: item.hook,
+      hook: item.hookType ?? item.hook ?? "question",
       slides: item.slides.slice(0, 7).map((text) => ({
         id: createId("slide"),
         text: text.trim(),

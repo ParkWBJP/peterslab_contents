@@ -61,10 +61,7 @@ export function findSelectedTopic(state: ProjectState): TopicSuggestion | null {
 }
 
 export function findSelectedScenario(state: ProjectState): ScenarioOption | null {
-  return (
-    state.scenarios.find((scenario) => scenario.id === state.selectedScenarioId) ??
-    null
-  );
+  return state.scenarios.find((scenario) => scenario.id === state.selectedScenarioId) ?? null;
 }
 
 export function slugifyFileName(value: string) {
@@ -121,11 +118,12 @@ export function buildPromptOverrides(assets: GeneratedSlideAsset[]) {
 }
 
 export function getApiModeLabel(usedFallback: boolean, language: Language) {
-  if (language === "ko") {
-    return usedFallback ? "데모 모드" : "OpenAI 연결";
+  switch (language) {
+    case "ko":
+      return usedFallback ? "데모 모드" : "OpenAI 연결";
+    case "en":
+      return usedFallback ? "Demo mode" : "OpenAI live";
+    default:
+      return usedFallback ? "デモモード" : "OpenAI接続";
   }
-  if (language === "en") {
-    return usedFallback ? "Demo mode" : "OpenAI live";
-  }
-  return usedFallback ? "デモモード" : "OpenAI接続";
 }

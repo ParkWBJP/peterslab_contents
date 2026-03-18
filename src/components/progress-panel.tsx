@@ -58,10 +58,10 @@ function TrackMascot({ progress }: { progress: number }) {
 
 function BurstEffects({ step }: { step: number }) {
   const pieces = [
-    { left: "10%", top: "4px", char: "♥", color: "#ff8ca4", delay: "0ms" },
-    { left: "22%", top: "-2px", char: "✦", color: "#ffbe5f", delay: "50ms" },
-    { left: "82%", top: "-4px", char: "✦", color: "#ffc76e", delay: "100ms" },
-    { left: "90%", top: "6px", char: "🐾", color: "#ce8b61", delay: "150ms" },
+    { left: "10%", top: "4px", char: "*", color: "#ff8ca4", delay: "0ms" },
+    { left: "22%", top: "-2px", char: "+", color: "#ffbe5f", delay: "50ms" },
+    { left: "82%", top: "-4px", char: "*", color: "#ffc76e", delay: "100ms" },
+    { left: "90%", top: "6px", char: "o", color: "#ce8b61", delay: "150ms" },
   ];
 
   return (
@@ -151,7 +151,7 @@ export function ProgressPanel({
                   }`}
                   style={{ left: `${offset}%` }}
                 >
-                  {isDone ? "🐾" : "•"}
+                  {isDone ? "*" : "."}
                 </span>
               );
             })}

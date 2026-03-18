@@ -29,7 +29,7 @@ function PawTrail() {
             animationDelay: `${index * 180}ms`,
           }}
         >
-          🐾
+          o
         </span>
       ))}
     </div>
