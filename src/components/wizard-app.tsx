@@ -781,33 +781,43 @@ export function WizardApp() {
                             <div className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-[#6b5143]">
                               {reviewIndex + 1} / {project.generatedAssets.length}
                             </div>
-                            <div className="flex gap-2">
-                              <ActionButton
-                                label="<"
-                                variant="secondary"
-                                onClick={() => setReviewIndex((current) => Math.max(0, current - 1))}
-                                disabled={reviewIndex === 0}
-                              />
-                              <ActionButton
-                                label=">"
-                                variant="secondary"
-                                onClick={() =>
-                                  setReviewIndex((current) =>
-                                    Math.min(project.generatedAssets.length - 1, current + 1),
-                                  )
-                                }
-                                disabled={reviewIndex === project.generatedAssets.length - 1}
-                              />
-                            </div>
                           </div>
 
-                          <PhonePreview
-                            asset={previewAsset}
-                            caption={project.caption}
-                            hashtags={project.hashtags}
-                            language={project.language}
-                            size="large"
-                          />
+                          <div className="relative flex justify-center">
+                            <button
+                              type="button"
+                              onClick={() => setReviewIndex((current) => Math.max(0, current - 1))}
+                              disabled={reviewIndex === 0}
+                              className="absolute left-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#e6d2c6] bg-white/95 text-lg font-bold text-[#6a5142] shadow-[0_12px_24px_rgba(97,58,41,0.12)] transition hover:-translate-y-[52%] disabled:cursor-not-allowed disabled:opacity-35"
+                              aria-label="previous slide"
+                            >
+                              ‹
+                            </button>
+
+                            <div className="mx-12">
+                              <PhonePreview
+                                asset={previewAsset}
+                                caption={project.caption}
+                                hashtags={project.hashtags}
+                                language={project.language}
+                                size="large"
+                              />
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setReviewIndex((current) =>
+                                  Math.min(project.generatedAssets.length - 1, current + 1),
+                                )
+                              }
+                              disabled={reviewIndex === project.generatedAssets.length - 1}
+                              className="absolute right-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#e6d2c6] bg-white/95 text-lg font-bold text-[#6a5142] shadow-[0_12px_24px_rgba(97,58,41,0.12)] transition hover:-translate-y-[52%] disabled:cursor-not-allowed disabled:opacity-35"
+                              aria-label="next slide"
+                            >
+                              ›
+                            </button>
+                          </div>
 
                           <div className="flex flex-wrap justify-center gap-2">
                             {project.generatedAssets.map((asset, index) => (
